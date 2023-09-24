@@ -10,6 +10,7 @@ from importlib import import_module
 import logging
 
 class Parent:
+    
     def __init__(self):
 
         logging.basicConfig(level=logging.INFO, filename='swiftsync.log', filemode='a', format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
