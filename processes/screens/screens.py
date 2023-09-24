@@ -42,6 +42,9 @@ class ScreenPoster:
         rows = cursor.fetchall()
         for row in rows:
             self.settings[row[0]] = row[1]
+        with open('key.txt') as f:
+            key_from_file = f.readline().strip()
+            self.settings['apiKey'] = key_from_file
 
     def get_paths(self):
         sql = "SELECT game, path FROM paths"
@@ -83,7 +86,7 @@ class ScreenPoster:
         results['key'] = self.settings['apiKey']
         results['game'] = game_name
         results['formidentifier'] = self.settings['formIdent']
-        url = self.settings['url'] + self.settings['apiKey']
+        url = self.settings['url'] + "&apikeyid=3&vc=" + self.settings['apiKey']
         response = requests.post(url, files=files, data=results, verify=True)
         print(response.text)
         response.close()
