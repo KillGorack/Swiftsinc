@@ -1,6 +1,6 @@
 # Swiftsync - Subprocess Management with Python
 
-Swiftsync is a an ultra simple Python application designed to manage multiple subprocesses using tkinter for the user interface and multiprocessing for handling the subprocesses. This project provides a framework for running various modules concurrently, making it suitable for tasks like monitoring and automation.
+Swiftsync is an ultra simple Python application designed to manage multiple subprocesses using tkinter for the user interface and multiprocessing for handling the subprocesses. This project provides a framework for running various modules concurrently, making it suitable for tasks like monitoring and automation.
 
 ## Table of Contents
 - [Features](#features)
