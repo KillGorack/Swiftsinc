@@ -67,6 +67,6 @@ Contributions are welcome! If you have suggestions, bug reports, or would like t
 5. Create a pull request.
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
 ![screencapture](https://github.com/KillGorack/Swiftsinc/assets/35109859/45b3768f-e6d0-446d-bc54-99453b705c0f)
