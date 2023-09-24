@@ -1,6 +1,6 @@
 # Swiftsync - Subprocess Management with Python
 
-Swiftsync is a Python application designed to manage multiple subprocesses using tkinter for the user interface and multiprocessing for handling the subprocesses. This project provides a framework for running various modules concurrently, making it suitable for tasks like monitoring and automation.
+Swiftsync is a an ultra simple Python application designed to manage multiple subprocesses using tkinter for the user interface and multiprocessing for handling the subprocesses. This project provides a framework for running various modules concurrently, making it suitable for tasks like monitoring and automation.
 
 ## Table of Contents
 - [Features](#features)
@@ -43,16 +43,13 @@ Swiftsync is a Python application designed to manage multiple subprocesses using
 ## Usage
 1. Upon running the application, you will be presented with a GUI window.
 2. The GUI displays the current modules loaded and their statuses.
-3. Modules are loaded from the `processes` directory and should follow a specific structure.
+3. Modules are loaded from the `processes` directory and should follow a specific structure. (See example within the files)
 
 ### Adding a New Module
 1. Create a new Python module within the `processes` directory. You can use existing modules as templates.
 2. Ensure the module contains a `main` function that accepts a `Queue` as an argument for communicating with the main application.
 3. Add the module to the `obj.addService("module_name", row)` section in the main script (`swiftsync.py`), specifying the module's name and the row in the GUI where it should appear.
-
-### Starting and Stopping Modules
-- Click the "Start" button in the GUI to start all loaded modules.
-- Click the "Stop" button or close the application window to terminate all modules gracefully.
+4. It may be necessary to import the sub process into the main.py file if the end goal is an EXE file. 
 
 ### Monitoring
 - The GUI updates in real-time, displaying the status of each module.
