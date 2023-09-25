@@ -109,10 +109,17 @@ def main(queue):
                 results = speed_test.test()
                 data_post = DataPost()
                 data_post.post_to_kill_gorack(results)
+
+                if results['download'] < 30:
+                    st = "NOK"
+                elif results['download'] < 60:
+                    st = "COK"
+                else:
+                    st = "OK"
                 
                 queue.put({
                     'name': 'speed',
-                    'status': 'OK',
+                    'status': st,
                     'message': f"speed: Down: {results['download']}, Up: {results['upload']}, Ping: {results['ping']}"
                 })
                 
