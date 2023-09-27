@@ -3,7 +3,10 @@ from processes.speed.speed import main as speed_main
 from processes.screens.screens import main as screens_main
 from processes.photos.photos import main as photos_main
 from processes.music.music import main as music_main
+from processes.backups.backups import main as backups_main
+
 import tkinter as tk
+from PIL import Image, ImageTk
 from multiprocessing import Process, Queue, freeze_support
 from datetime import datetime
 from importlib import import_module
@@ -37,6 +40,13 @@ class Parent:
         title_frame.pack(side='bottom', pady=10)
         title_label = tk.Label(title_frame, text="Contact: dmonroe@killgorack.com", font=self.texta, bg='black', fg='#cccccc')
         title_label.pack()
+
+        img = Image.open("swift.png")
+        self.tk_img = ImageTk.PhotoImage(img)
+        label = tk.Label(self.root, image=self.tk_img, borderwidth=0, highlightthickness=0)
+        label.place(x=0, y=0)
+
+
 
         self.status_dot = {}
         self.labels = {}
@@ -95,4 +105,5 @@ if __name__ == "__main__":
     obj.addService("screens", 2)
     obj.addService("photos", 3)
     obj.addService("music", 4)
+    obj.addService("backups", 5)
     obj.startServices()
