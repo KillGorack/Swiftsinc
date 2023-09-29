@@ -10,6 +10,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from multiprocessing import Queue
 
+
 class ScreenPoster:
 
     def __init__(self, queue):
@@ -54,7 +55,6 @@ class ScreenPoster:
         for row in rows:
             self.paths[row[0]] = row[1]
 
-
     def check_directories(self):
         for game_name, path in self.paths.items():
             if os.path.exists(path):
@@ -86,7 +86,8 @@ class ScreenPoster:
         results['key'] = self.settings['apiKey']
         results['game'] = game_name
         results['formidentifier'] = self.settings['formIdent']
-        url = self.settings['url'] + "&apikeyid=3&vc=" + self.settings['apiKey']
+        url = self.settings['url'] + \
+            "&apikeyid=3&vc=" + self.settings['apiKey']
         response = requests.post(url, files=files, data=results, verify=True)
         print(response.text)
         response.close()
@@ -114,6 +115,7 @@ class ScreenPoster:
             except:
                 time.sleep(5)
 
+
 class MyHandler(FileSystemEventHandler):
 
     def __init__(self, screen_poster, game_name, path, post_delay):
@@ -128,7 +130,8 @@ class MyHandler(FileSystemEventHandler):
             file = os.path.basename(event.src_path)
             time.sleep(self.post_delay)
             self.screen_poster.post_screenshot(file, self.path, self.game_name)
-            
+
+
 def main(queue):
 
     queue.put({
@@ -136,7 +139,7 @@ def main(queue):
         'status': 'OK',
         'message': "Service started."
     })
-    
+
     sp = ScreenPoster(queue)
     s = sched.scheduler(time.time, time.sleep)
 
@@ -154,6 +157,7 @@ def main(queue):
         observer.stop()
 
     observer.join()
+
 
 if __name__ == "__main__":
     queue = Queue()

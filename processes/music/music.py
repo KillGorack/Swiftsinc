@@ -10,13 +10,15 @@ from multiprocessing import Queue
 # =============================================
 # Define paths (later use db relative)
 # =============================================
-path_error      = "C://Users//David//Music//_error//"
-path_read       = "C://Users//David//Music//_drop//"
-path_cleaned    = "D://Music//"
-path_data       = "C://Users//David//Music//musical_data.db"
+path_error = "C://Users//David//Music//_error//"
+path_read = "C://Users//David//Music//_drop//"
+path_cleaned = "D://Music//"
+path_data = "C://Users//David//Music//musical_data.db"
 # =============================================
 # Definition for checking paths
 # =============================================
+
+
 def check_paths(path_error, path_read, path_cleaned, path_data):
     rtrn = True
     if os.path.exists(os.path.dirname(os.path.abspath(path_data))) == False:
@@ -31,6 +33,8 @@ def check_paths(path_error, path_read, path_cleaned, path_data):
 # =============================================
 # Definition for checking paths content
 # =============================================
+
+
 def check_content(path_error, path_cleaned):
     rtrn = True
     path, dirs, files = next(os.walk(path_error))
@@ -43,6 +47,8 @@ def check_content(path_error, path_cleaned):
 # =============================================
 # Database birth
 # =============================================
+
+
 def db_init(dbname):
     conn = sqlite3.connect(dbname, timeout=10)
     c = conn.cursor()
@@ -67,38 +73,44 @@ def db_init(dbname):
     `year`              TEXT,
     `path`              TEXT,
     `ext`               TEXT
-    )''');
-    c.execute("delete from 'music_data'");
+    )''')
+    c.execute("delete from 'music_data'")
     conn.commit()
-    c.execute("delete from sqlite_sequence where name='music_data'");
+    c.execute("delete from sqlite_sequence where name='music_data'")
     conn.commit()
     conn.close()
     return True
 # =============================================
 # prestart check
 # =============================================
+
+
 def start_check(path_error, path_read, path_cleaned, path_data):
     stp = False
     msg = ""
-    if(check_paths(path_error, path_read, path_cleaned, path_data) == False):
+    if (check_paths(path_error, path_read, path_cleaned, path_data) == False):
         msg = "One or more of the needed directories do not exist, check your py."
         stp = True
-    if(check_content(path_error, path_cleaned) == False):
+    if (check_content(path_error, path_cleaned) == False):
         msg = "One or more of the needed directories have files within, Delete from the error, and cleaned directories, as they need to be empty."
         stp = True
     return [stp, msg]
 # =============================================
 # A list of ALL files....
 # =============================================
+
+
 def getfiles(path_read):
     f = []
     for folder, subfolder, file in os.walk(path_read):
         for dbname in file:
-            f.append(os.path.join(folder,dbname))
+            f.append(os.path.join(folder, dbname))
     return f
 # =============================================
 # Get musical data
 # =============================================
+
+
 def gather_data(file_list, path_data):
     cleaned = []
     duped = []
@@ -111,27 +123,28 @@ def gather_data(file_list, path_data):
         try:
             tag = TinyTag.get(song)
             item = [
-            tag.album,
-            tag.albumartist,
-            tag.artist,
-            tag.audio_offset,
-            tag.bitrate,
-            tag.comment,
-            tag.disc,
-            tag.disc_total,
-            tag.duration,
-            tag.filesize,
-            tag.genre,
-            tag.samplerate,
-            tag.title,
-            tag.track,
-            tag.track_total,
-            tag.year,
-            song,
-            os.path.splitext(song)[1]
+                tag.album,
+                tag.albumartist,
+                tag.artist,
+                tag.audio_offset,
+                tag.bitrate,
+                tag.comment,
+                tag.disc,
+                tag.disc_total,
+                tag.duration,
+                tag.filesize,
+                tag.genre,
+                tag.samplerate,
+                tag.title,
+                tag.track,
+                tag.track_total,
+                tag.year,
+                song,
+                os.path.splitext(song)[1]
             ]
-            comp = str(tag.album) + str(tag.albumartist) + str(tag.title) + str(tag.filesize) + str(tag.samplerate) + str(tag.bitrate)
-            if(comp in test):
+            comp = str(tag.album) + str(tag.albumartist) + str(tag.title) + \
+                str(tag.filesize) + str(tag.samplerate) + str(tag.bitrate)
+            if (comp in test):
                 duped.append(item)
             elif len(tag.album.strip()) == 0 or len(tag.title.strip()) == 0:
                 error.append(item)
@@ -147,19 +160,26 @@ def gather_data(file_list, path_data):
 # =============================================
 # Your basic cleaner
 # =============================================
+
+
 def string_cleaner(cleaned_string):
-    bad_chars = ['~','#','%','*','(',')','[',']','{','}','/','/',':','?','|','\"','\'', '\n', '\r']
+    bad_chars = ['~', '#', '%', '*', '(', ')', '[', ']',
+                 '{', '}', '/', '/', ':', '?', '|', '\"', '\'', '\n', '\r']
     for i in bad_chars:
         cleaned_string = cleaned_string.replace(i, '')
     return cleaned_string
 # =============================================
 # Move to cleaned area..
 # =============================================
+
+
 def move_to_cleaned(files, movepath, queue):
-    if(len(files) > 0):
+    if (len(files) > 0):
         for file in files:
-            dest = movepath + string_cleaner(file[2]) + "//" + string_cleaner(file[0]) + "//"
-            newpath = dest + string_cleaner(file[12]) + " " + string_cleaner(file[17])
+            dest = movepath + \
+                string_cleaner(file[2]) + "//" + string_cleaner(file[0]) + "//"
+            newpath = dest + \
+                string_cleaner(file[12]) + " " + string_cleaner(file[17])
             if not os.path.exists(dest):
                 os.makedirs(dest)
             shutil.copy(file[16], newpath)
@@ -174,11 +194,15 @@ def move_to_cleaned(files, movepath, queue):
 # =============================================
 # Duplicates
 # =============================================
+
+
 def move_to_dupes(files, movepath, queue):
-    if(len(files) > 0):
+    if (len(files) > 0):
         for file in files:
-            dest = movepath + string_cleaner(file[1]) + "//" + string_cleaner(file[0]) + "//"
-            newpath = dest + string_cleaner(file[12]) + " " + string_cleaner(file[17])
+            dest = movepath + \
+                string_cleaner(file[1]) + "//" + string_cleaner(file[0]) + "//"
+            newpath = dest + \
+                string_cleaner(file[12]) + " " + string_cleaner(file[17])
             if not os.path.exists(dest):
                 os.makedirs(dest)
             shutil.copy(file[16], newpath)
@@ -193,14 +217,19 @@ def move_to_dupes(files, movepath, queue):
 # =============================================
 # error
 # =============================================
+
+
 def move_to_error(files, movepath, queue):
-    if(len(files) > 0):
+    if (len(files) > 0):
         for file in files:
-            if(len(file) != 19):
-                a=1
+            if (len(file) != 19):
+                a = 1
             else:
-                dest = movepath + string_cleaner(file[1]) + "//" + string_cleaner(file[0]) + "//"
-                newpath = dest + string_cleaner(file[12]) + " " + string_cleaner(file[17])
+                dest = movepath + \
+                    string_cleaner(file[1]) + "//" + \
+                    string_cleaner(file[0]) + "//"
+                newpath = dest + \
+                    string_cleaner(file[12]) + " " + string_cleaner(file[17])
                 if not os.path.exists(dest):
                     os.makedirs(dest)
                 shutil.copy(file[16], newpath)
@@ -234,6 +263,7 @@ def delete_from_source(files, queue):
     else:
         return False
 
+
 def main(queue):
 
     queue.put({
@@ -254,8 +284,11 @@ def main(queue):
             move_to_cleaned(inventory[0], path_cleaned, queue)
             move_to_dupes(inventory[1], path_error, queue)
             move_to_error(inventory[2], path_error, queue)
-            delete_from_source(inventory[0] + inventory[1] + inventory[2], queue)  # Delete files from source
+            # Delete files from source
+            delete_from_source(
+                inventory[0] + inventory[1] + inventory[2], queue)
         time.sleep(10)
+
 
 if __name__ == "__main__":
     queue = Queue()

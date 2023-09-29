@@ -12,6 +12,7 @@ fromdir = "D://Pictures//_drop"
 destdir = "D://Pictures//_organized"
 errodir = "D://Pictures//_err"
 
+
 def main(queue):
 
     queue.put({
@@ -22,7 +23,8 @@ def main(queue):
 
     # Definitions
     def month_converter(month):
-        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         return months.index(month) + 1
 
     # Main function that does the work
@@ -33,19 +35,23 @@ def main(queue):
                 try:
                     dt = Image.open(filepath)._getexif()[36867]
                     yr = dt[:4]
-                    mo = dt[5:7] + "_" + datetime.date(1900, int(dt[5:7]), 1).strftime('%B')
+                    mo = dt[5:7] + "_" + \
+                        datetime.date(1900, int(dt[5:7]), 1).strftime('%B')
                     dy = dt[8:10]
                     pre = "photo_"
-                    path = destdir + "/" + yr + "/" + mo + "/" + str(int(dy)).zfill(2) + "/"
+                    path = destdir + "/" + yr + "/" + mo + \
+                        "/" + str(int(dy)).zfill(2) + "/"
                 except:
                     try:
                         dt = time.ctime(os.path.getmtime(filepath))
                         yr = dt[-4:]
                         moint = month_converter(dt[4:7])
-                        mo = str(moint).zfill(2) + "_" + datetime.date(1900, int(moint), 1).strftime('%B')
+                        mo = str(moint).zfill(2) + "_" + \
+                            datetime.date(1900, int(moint), 1).strftime('%B')
                         dy = dt[8:10]
                         pre = "image_"
-                        path = destdir + "/" + yr + "/" + mo + "/" + str(int(dy)).zfill(2) + "/"
+                        path = destdir + "/" + yr + "/" + mo + \
+                            "/" + str(int(dy)).zfill(2) + "/"
                     except:
                         stp = True
                         pre = "unknown_"
@@ -60,7 +66,8 @@ def main(queue):
                     os.makedirs(path)
                 file_list = os.listdir(path)
                 cnt = len(file_list) + 1
-                shutil.move(subdir + "/" + file, path + pre + str(cnt).zfill(2) + ext)
+                shutil.move(subdir + "/" + file, path +
+                            pre + str(cnt).zfill(2) + ext)
                 queue.put({
                     'name': 'photos',
                     'status': 'OK',
@@ -82,6 +89,7 @@ def main(queue):
                 'message': "Finished moving your images."
             })
         before = after
+
 
 if __name__ == "__main__":
     queue = Queue()
