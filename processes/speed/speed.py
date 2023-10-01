@@ -8,6 +8,7 @@ from multiprocessing import Queue
 
 
 class SpeedTest:
+    
     def __init__(self):
         super(SpeedTest, self).__init__()
 
@@ -68,7 +69,8 @@ class SpeedTest:
 
 class DataPost:
 
-    def post_to_kill_gorack(self, results):
+    def post_to_kill_gorack(self, results, queue):
+        
         with open('key.txt') as f:
             key_from_file = f.readline().strip()
 
@@ -77,15 +79,19 @@ class DataPost:
         results['formidentifier'] = "alacarte\\speedtest\\speedtest"
 
         try:
+
             url = f"https://www.killgorack.com/PX4/api.php?ap=spd&apikeyid=3&vc={key_from_file}&api=json"
-            headers = {
-                'Content-type': 'application/x-www-form-urlencoded', 'Accept': 'text/plain'}
-            response = requests.post(
-                url, data=results, headers=headers, verify=True)
+            headers = {'Content-type': 'application/x-www-form-urlencoded', 'Accept': 'text/plain'}
+            response = requests.post(url, data=results, headers=headers, verify=True)
             response.close()
 
         except requests.RequestException:
-            pass
+
+            queue.put({
+                'name': 'speed',
+                'status': 'NOK',
+                'message': f"Posting speed data to killgorack.com failed."
+            })
 
 
 def main(queue):
@@ -113,7 +119,7 @@ def main(queue):
                 speed_test = SpeedTest()
                 results = speed_test.test()
                 data_post = DataPost()
-                data_post.post_to_kill_gorack(results)
+                data_post.post_to_kill_gorack(results, queue)
 
                 if results['download'] < 30:
                     st = "NOK"
@@ -135,7 +141,7 @@ def main(queue):
                 queue.put({
                     'name': 'speed',
                     'status': 'NOK',
-                    'message': f"Error: {str(e)}"
+                    'message': f"{str(e)}"
                 })
 
                 time.sleep(60)

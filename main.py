@@ -73,14 +73,15 @@ class Parent:
             self.labels[process_name].grid(row=row, column=1, sticky='w')
         except ModuleNotFoundError:
             logging.error(
-                f"No module named 'processes.{process_name}.{process_name}'")
+                f"Swiftsync: No module named 'processes.{process_name}.{process_name}'")
 
     def startServices(self):
         for process in self.processes.values():
             try:
                 process.start()
             except Exception as e:
-                print(f"Error starting process: {e}")
+                errMsg = f"Error starting process: {e}"
+                logging.error(f"Swiftsync: {errMsg}")
         self.root.after(1000, self.update_labels)
         self.root.mainloop()
 
@@ -88,7 +89,7 @@ class Parent:
         for process in self.processes.values():
             process.terminate()
             process.join()
-            logging.info(f"Terminated process {process}")
+            logging.info(f"Swiftsync: Terminated process {process}")
         self.root.destroy()
 
     def update_labels(self):
