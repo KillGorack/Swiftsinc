@@ -8,6 +8,11 @@ from multiprocessing import Queue
 
 def backup_directory(sourcepath, archivepath, name, narchives, queue):
     if os.path.isdir(sourcepath):
+        queue.put({
+            'name': 'backups',
+            'status': 'OK',
+            'message': f"Backup of {name} started."
+        })
         archivefile = os.path.join(
             archivepath, time.strftime("%Y%m%d-%H%M%S") + '.zip')
         if not os.path.exists(archivepath):

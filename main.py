@@ -94,15 +94,17 @@ class Parent:
     def update_labels(self):
         while not self.queue.empty():
             message = self.queue.get()
-            logging.info(f"{message['name']}: {message['message']}")
             self.labels[message['name']].config(
                 text=f"[{message['name']}] - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {message['message']} ")
             if message['status'] == 'OK':
                 self.status_dot[message['name']].itemconfig(1, fill='green')
+                logging.info(f"{message['name']}: {message['message']}")
             elif message['status'] == 'NOK':
                 self.status_dot[message['name']].itemconfig(1, fill='red')
+                logging.error(f"{message['name']}: {message['message']}")
             elif message['status'] == 'COK':
                 self.status_dot[message['name']].itemconfig(1, fill='yellow')
+                logging.warn(f"{message['name']}: {message['message']}")
         self.root.after(1000, self.update_labels)
 
 
