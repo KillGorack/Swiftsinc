@@ -98,6 +98,11 @@ class Parent:
                 logging.warn(f"{message['name']}: {message['message']}")
         self.root.after(1000, self.update_labels)
 
+    def checkProcesses(self):
+        for process_name, process in self.processes.items():
+            if not process.is_alive():
+                logging.error(f"Swiftsync: Process {process_name} has terminated unexpectedly")
+
 if __name__ == "__main__":
     freeze_support()
     obj = Parent()
@@ -108,3 +113,4 @@ if __name__ == "__main__":
     obj.addService("music", 4)
     obj.addService("backups", 5)
     obj.startServices()
+    obj.checkProcesses()

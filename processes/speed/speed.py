@@ -13,6 +13,7 @@ class SpeedTest:
         super(SpeedTest, self).__init__()
 
     def test(self):
+        
         servers = []
         threads = None
 
@@ -60,11 +61,11 @@ class SpeedTest:
             'c_country': s.results.dict()['client']['country']
         }
 
-        results = dict(flds)
-        results.update(flds_server)
-        results.update(flds_client)
+        res = dict(flds)
+        res.update(flds_server)
+        res.update(flds_client)
 
-        return results
+        return res
 
 
 class DataPost:
