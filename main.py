@@ -14,7 +14,13 @@ import logging
 class Parent:
 
     def __init__(self):
+        """
+        Initialize the Swiftsync application.
 
+        This method sets up the Swiftsync application, including configuring logging, creating
+        necessary data structures, configuring the GUI, and displaying the main window.
+
+        """
         logging.basicConfig(level=logging.INFO, filename='swiftsync.log', filemode='a', format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
         
         self.queue = Queue()
@@ -48,7 +54,19 @@ class Parent:
         label = tk.Label(self.root, image=self.tk_img, borderwidth=0, highlightthickness=0)
         label.place(x=0, y=0)
 
+
+
+
+
     def addService(self, process_name, row):
+        """
+        This function adds a service to the GUI and initializes its process.
+
+        Args:
+            process_name (str): The name of the process to add.
+            row (int): The row in the GUI grid where the service should be placed.
+
+        """
         try:
             process_module = import_module(f"processes.{process_name}.{process_name}")
             process_func = getattr(process_module, 'main')
@@ -65,21 +83,44 @@ class Parent:
         except ModuleNotFoundError:
             logging.error(f"Swiftsync: No module named '{process_name}'")
 
+
+
+
+
     def toggleProcess(self, process_name):
+        """
+        Toggle the specified process on or off.
+
+        Args:
+            process_name (str): The name of the process to toggle.
+
+        """
         button = self.buttons[process_name]
         if process_name in self.processes and self.processes[process_name].is_alive():
             self.processes[process_name].terminate()
             self.processes[process_name].join()
             del self.processes[process_name]
+            self.status_dot[process_name].itemconfig(1, fill='light gray')
+            logging.info(f"Swiftsync: process '{process_name}' stopped.")
             button.config(text="Stopped")
         else:
             process_module = import_module(f"processes.{process_name}.{process_name}")
             process_func = getattr(process_module, 'main')
             self.processes[process_name] = Process(target=process_func, args=(self.queue,))
             self.processes[process_name].start()
+            self.status_dot[process_name].itemconfig(1, fill='green')
+            logging.info(f"Swiftsync: process '{process_name}' restarted.")
             button.config(text="Running")
 
+
+
+
+
     def startServices(self):
+        """
+        Start all the processes in the 'processes' dictionary and begin updating labels.
+
+        """
         for process in self.processes.values():
             try:
                 process.start()
@@ -89,14 +130,33 @@ class Parent:
         self.root.after(1000, self.update_labels)
         self.root.mainloop()
 
+
+
+
+
     def stopServices(self):
+        """
+        Terminate all running processes and close the application window.
+
+        """
         for process in self.processes.values():
             process.terminate()
             process.join()
             logging.info(f"Swiftsync: Terminated process {process}")
         self.root.destroy()
 
+
+
+
+
     def update_labels(self):
+        """
+        Update labels and status dots based on messages received from the queue.
+
+        This function retrieves messages from the queue and updates the GUI labels and status dots
+        according to the message's content.
+
+        """
         while not self.queue.empty():
             message = self.queue.get()
             self.labels[message['name']].config(
@@ -112,13 +172,35 @@ class Parent:
                 logging.warn(f"{message['name']}: {message['message']}")
         self.root.after(1000, self.update_labels)
 
+
+
+
+
     def checkProcesses(self):
+        """
+        Check the status of running processes and log if any have terminated unexpectedly.
+
+        This function iterates through the running processes and checks if any of them have
+        terminated unexpectedly. If a process has terminated, it logs an error message.
+
+        """
         for process_name, process in self.processes.items():
             if not process.is_alive():
                 logging.error(f"Swiftsync: Process {process_name} has terminated unexpectedly")
         self.root.after(1000, self.checkProcesses)
 
+
+
+
+
 if __name__ == "__main__":
+    """
+    Entry point for the Swiftsync application.
+
+    This block is executed when the script is run as the main program. It sets up the Parent object,
+    adds and, starts the services, and initiates the process-checking loop.
+
+    """
     freeze_support()
     obj = Parent()
     obj.addService("weather", 0)
