@@ -4,7 +4,6 @@ from processes.screens.screens import main as screens_main
 from processes.photos.photos import main as photos_main
 from processes.music.music import main as music_main
 from processes.backups.backups import main as backups_main
-
 import tkinter as tk
 from PIL import Image, ImageTk
 from multiprocessing import Process, Queue, freeze_support
@@ -12,15 +11,17 @@ from datetime import datetime
 from importlib import import_module
 import logging
 
-
 class Parent:
 
     def __init__(self):
 
         logging.basicConfig(level=logging.INFO, filename='swiftsync.log', filemode='a', format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-
+        
         self.queue = Queue()
         self.processes = {}
+        self.status_dot = {}
+        self.labels = {}
+        self.buttons = {}
 
         self.root = tk.Tk()
         self.root.geometry("800x400")
@@ -47,9 +48,6 @@ class Parent:
         label = tk.Label(self.root, image=self.tk_img, borderwidth=0, highlightthickness=0)
         label.place(x=0, y=0)
 
-        self.status_dot = {}
-        self.labels = {}
-
     def addService(self, process_name, row):
         try:
             process_module = import_module(f"processes.{process_name}.{process_name}")
@@ -60,10 +58,26 @@ class Parent:
             self.status_dot[process_name] = tk.Canvas(service_frame, width=20, height=20)
             self.status_dot[process_name].grid(row=row, column=0)
             self.status_dot[process_name].create_oval(6, 7, 16, 17, fill='yellow')
+            self.buttons[process_name] = tk.Button(service_frame, text="Running", height=1, width=7, command=lambda: self.toggleProcess(process_name), font=("Helvetica", 8))
+            self.buttons[process_name].grid(row=row, column=1)
             self.labels[process_name] = tk.Label(service_frame, text="", anchor='w', justify='left', font=self.texta, bg='#cccccc')
-            self.labels[process_name].grid(row=row, column=1, sticky='w')
+            self.labels[process_name].grid(row=row, column=2, sticky='w')
         except ModuleNotFoundError:
-            logging.error(f"Swiftsync: No module named 'processes.{process_name}.{process_name}'")
+            logging.error(f"Swiftsync: No module named '{process_name}'")
+
+    def toggleProcess(self, process_name):
+        button = self.buttons[process_name]
+        if process_name in self.processes and self.processes[process_name].is_alive():
+            self.processes[process_name].terminate()
+            self.processes[process_name].join()
+            del self.processes[process_name]
+            button.config(text="Stopped")
+        else:
+            process_module = import_module(f"processes.{process_name}.{process_name}")
+            process_func = getattr(process_module, 'main')
+            self.processes[process_name] = Process(target=process_func, args=(self.queue,))
+            self.processes[process_name].start()
+            button.config(text="Running")
 
     def startServices(self):
         for process in self.processes.values():
@@ -102,6 +116,7 @@ class Parent:
         for process_name, process in self.processes.items():
             if not process.is_alive():
                 logging.error(f"Swiftsync: Process {process_name} has terminated unexpectedly")
+        self.root.after(1000, self.checkProcesses)
 
 if __name__ == "__main__":
     freeze_support()
