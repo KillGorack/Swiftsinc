@@ -11,6 +11,10 @@ from datetime import datetime
 from importlib import import_module
 import logging
 
+
+
+
+
 class Parent:
 
     def __init__(self):
@@ -38,6 +42,7 @@ class Parent:
         self.root.configure(background='black')
         self.texta = ("Courier", 10)
         self.textb = ("Courier", 16, "bold")
+        self.textc = ("Courier", 8, "bold")
 
         title_frame = tk.Frame(self.root)
         title_frame.pack(side='top', pady=10)
@@ -48,11 +53,6 @@ class Parent:
         title_frame.pack(side='bottom', pady=10)
         title_label = tk.Label(title_frame, text="Contact: dmonroe@killgorack.com", font=self.texta, bg='black', fg='#cccccc')
         title_label.pack()
-
-        img = Image.open("swift.png")
-        self.tk_img = ImageTk.PhotoImage(img)
-        label = tk.Label(self.root, image=self.tk_img, borderwidth=0, highlightthickness=0)
-        label.place(x=0, y=0)
 
 
 
@@ -76,7 +76,7 @@ class Parent:
             self.status_dot[process_name] = tk.Canvas(service_frame, width=20, height=20)
             self.status_dot[process_name].grid(row=row, column=0)
             self.status_dot[process_name].create_oval(6, 7, 16, 17, fill='yellow')
-            self.buttons[process_name] = tk.Button(service_frame, text="Running", height=1, width=7, command=lambda: self.toggleProcess(process_name), font=("Helvetica", 8))
+            self.buttons[process_name] = tk.Button(service_frame, text="Running", height=1, width=8, command=lambda: self.toggleProcess(process_name), font=self.textc)
             self.buttons[process_name].grid(row=row, column=1)
             self.labels[process_name] = tk.Label(service_frame, text="", anchor='w', justify='left', font=self.texta, bg='#cccccc')
             self.labels[process_name].grid(row=row, column=2, sticky='w')
