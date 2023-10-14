@@ -10,7 +10,8 @@ from multiprocessing import Process, Queue, freeze_support
 from datetime import datetime
 from importlib import import_module
 import logging
-
+import signal
+import sys
 
 
 
@@ -26,7 +27,7 @@ class Parent:
 
         """
         logging.basicConfig(level=logging.INFO, filename='swiftsync.log', filemode='a', format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-        
+
         self.queue = Queue()
         self.processes = {}
         self.status_dot = {}
@@ -51,8 +52,11 @@ class Parent:
 
         title_frame = tk.Frame(self.root)
         title_frame.pack(side='bottom', pady=10)
-        title_label = tk.Label(title_frame, text="Contact: dmonroe@killgorack.com", font=self.texta, bg='black', fg='#cccccc')
+        title_label = tk.Label(title_frame, text="Contact: david.monroe@vw.com, please leave running.", font=self.texta, bg='black', fg='#cccccc')
         title_label.pack()
+
+        signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
 
 
 
@@ -101,6 +105,7 @@ class Parent:
             self.processes[process_name].join()
             del self.processes[process_name]
             self.status_dot[process_name].itemconfig(1, fill='light gray')
+            self.labels[process_name].config(text=f"[{process_name}] - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} Process stopped.")
             logging.info(f"Swiftsync: process '{process_name}' stopped.")
             button.config(text="Stopped")
         else:
@@ -109,6 +114,7 @@ class Parent:
             self.processes[process_name] = Process(target=process_func, args=(self.queue,))
             self.processes[process_name].start()
             self.status_dot[process_name].itemconfig(1, fill='green')
+            self.labels[process_name].config(text=f"[{process_name}] - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} Process restarting.")
             logging.info(f"Swiftsync: process '{process_name}' restarted.")
             button.config(text="Running")
 
@@ -137,13 +143,31 @@ class Parent:
     def stopServices(self):
         """
         Terminate all running processes and close the application window.
-
         """
         for process in self.processes.values():
-            process.terminate()
-            process.join()
-            logging.info(f"Swiftsync: Terminated process {process}")
+            if process.is_alive():
+                process.terminate()
+                process.join()
+                logging.info(f"Swiftsync: Terminated process {process}")
         self.root.destroy()
+
+
+
+
+
+    def signal_handler(self, signum, frame):
+        """
+        Handles signals triggered by the operating system. This method is used to perform cleanup activities 
+        when the program receives signals indicating abandoned processes.
+
+        Args:
+            signum (int): The signal number that triggers the handler. Each signal (like SIGINT, SIGTERM, etc.) has a corresponding number.
+            frame (frame): The current stack frame. It provides information about the code being executed when the signal occurred.
+
+        Returns:
+            None
+        """
+        self.stopServices()
 
 
 
@@ -159,8 +183,7 @@ class Parent:
         """
         while not self.queue.empty():
             message = self.queue.get()
-            self.labels[message['name']].config(
-                text=f"[{message['name']}] - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {message['message']} ")
+            self.labels[message['name']].config(text=f"[{message['name']}] - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {message['message']} ")
             if message['status'] == 'OK':
                 self.status_dot[message['name']].itemconfig(1, fill='green')
                 logging.info(f"{message['name']}: {message['message']}")
