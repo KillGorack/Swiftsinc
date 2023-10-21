@@ -4,14 +4,14 @@ from processes.screens.screens import main as screens_main
 from processes.photos.photos import main as photos_main
 from processes.music.music import main as music_main
 from processes.backups.backups import main as backups_main
+from processes.scraper.scraper import main as scraper_main
 import tkinter as tk
-from PIL import Image, ImageTk
 from multiprocessing import Process, Queue, freeze_support
 from datetime import datetime
 from importlib import import_module
 import logging
 import signal
-import sys
+
 
 
 
@@ -143,6 +143,7 @@ class Parent:
     def stopServices(self):
         """
         Terminate all running processes and close the application window.
+
         """
         for process in self.processes.values():
             if process.is_alive():
@@ -166,6 +167,7 @@ class Parent:
 
         Returns:
             None
+            
         """
         self.stopServices()
 
@@ -232,5 +234,6 @@ if __name__ == "__main__":
     obj.addService("photos", 3)
     obj.addService("music", 4)
     obj.addService("backups", 5)
+    obj.addService("scraper", 6)
     obj.startServices()
     obj.checkProcesses()
