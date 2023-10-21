@@ -162,3 +162,5 @@ cython_debug/
 key.txt
 images/
 pdfs/
+\web_crawl.db
+\web_crawl.db-journal
