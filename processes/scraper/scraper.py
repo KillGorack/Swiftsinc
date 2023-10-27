@@ -90,7 +90,6 @@ class imageReaper:
                 self.download_pdf(url, queue)
 
 
-
     def download_image(self, img_url, queue):
         try:
             response = requests.get(img_url, stream=True)
@@ -98,6 +97,11 @@ class imageReaper:
             filename = 'image' + str(self.counter)
             with open('images/' + filename + '.jpg', 'wb') as out_file:
                 out_file.write(response.content)
+            queue.put({
+                'name': 'scraper',
+                'status': 'OK',
+                'message': "Image downloaded {}".format(self.counter)
+            })
             self.counter += 1
         except Exception as e:
             pass
@@ -108,6 +112,11 @@ class imageReaper:
             filename = 'pdf' + str(self.counter)
             with open('pdfs/' + filename + '.pdf', 'wb') as out_file:
                 out_file.write(response.content)
+            queue.put({
+                'name': 'scraper',
+                'status': 'OK',
+                'message': "PDF downloaded {}".format(self.counter)
+            })
             self.counter += 1
         except Exception as e:
             pass

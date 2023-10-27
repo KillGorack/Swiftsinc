@@ -7,7 +7,7 @@ function Hide-Console
 
 
 
-$pythonScript = "D:\Documents\python\Swiftsinc\main.PY"
+$pythonScript = "D:\Documents\python\Swiftsinc\Swiftsync.PY"
 Invoke-Expression "python `"$pythonScript`""
 
 Hide-Console

@@ -66,6 +66,11 @@ def main(queue):
 
         conn.close()
 
+        queue.put({
+            'name': 'backups',
+            'timeout': 2880
+        })
+
     schedule.every().day.at("00:10").do(daily_check)
 
     while True:

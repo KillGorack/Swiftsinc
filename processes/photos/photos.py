@@ -77,6 +77,10 @@ def main(queue):
     movinator(queue)
     before = dict([(f, None) for f in os.listdir(fromdir)])
     while True:
+        queue.put({
+            'name': 'photos',
+            'timeout': 1
+        })
         time.sleep(10)
         after = dict([(f, None) for f in os.listdir(fromdir)])
         added = [f for f in after if not f in before]

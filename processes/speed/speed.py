@@ -144,13 +144,17 @@ def main(queue):
                     'status': 'NOK',
                     'message': f"{str(e)}"
                 })
-
+                
                 time.sleep(60)
 
     schedule.every().hour.at(":00").do(lambda: job(queue))
 
     while True:
         schedule.run_pending()
+        queue.put({
+            'name': 'photos',
+            'timeout': 5
+        })
         time.sleep(1)
 
 

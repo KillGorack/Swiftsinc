@@ -11,12 +11,16 @@ from datetime import datetime
 from importlib import import_module
 import logging
 import signal
-
-
-
-
+import time
+import os
+import subprocess
+import sqlite3
 
 class Parent:
+
+
+
+
 
     def __init__(self):
         """
@@ -33,13 +37,21 @@ class Parent:
         self.status_dot = {}
         self.labels = {}
         self.buttons = {}
+        self.response = {}
+        self.supressMessages = False
+
+        conn = sqlite3.connect('settings.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT param FROM stg WHERE name = 'reportBackTime'")
+        record = cursor.fetchone()
+        self.report_back_after_process_start = int(record[0])
 
         self.root = tk.Tk()
         self.root.geometry("800x400")
         self.root.resizable(False, False)
-        self.root.title("Swiftsync")
+        self.root.title("Swiftsync 1.0")
         self.root.iconbitmap(r'favicon.ico')
-        self.root.protocol("WM_DELETE_WINDOW", self.stopServices)
+        self.root.protocol("WM_DELETE_WINDOW", self.windowXCloser)
         self.root.configure(background='black')
         self.texta = ("Courier", 10)
         self.textb = ("Courier", 16, "bold")
@@ -55,8 +67,55 @@ class Parent:
         title_label = tk.Label(title_frame, text="Contact: david.monroe@vw.com, please leave running.", font=self.texta, bg='black', fg='#cccccc')
         title_label.pack()
 
+        log_button = tk.Button(self.root, text="Open Log", command=self.open_log)
+        log_button.place(relx=1.0, rely=1.0, x=-5, y=-5, anchor='se')
+
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
+
+
+
+
+
+    def open_log(self):
+        """
+        Open the swiftsync.log file in Notepad.
+
+        Args:
+            none
+
+        """
+        subprocess.Popen(["notepad.exe", os.path.join(os.getcwd(), 'swiftsync.log')])
+
+
+
+
+
+    def windowXCloser(self):
+        """
+        When closing the window, lets not log the termination of each process.
+
+        Args:
+            none
+
+        """
+        self.supressMessages = True
+        self.stopServices()
+        self.supressMessages = False
+
+
+        
+
+
+    def signal_handler(self, signum, frame):
+        """
+        This definition just cleans up zombies..
+
+        Args:
+            none
+
+        """
+        self.stopServices()
 
 
 
@@ -101,6 +160,8 @@ class Parent:
         """
         button = self.buttons[process_name]
         if process_name in self.processes and self.processes[process_name].is_alive():
+            if process_name in self.response:
+                del self.response[process_name]
             self.processes[process_name].terminate()
             self.processes[process_name].join()
             del self.processes[process_name]
@@ -109,6 +170,10 @@ class Parent:
             logging.info(f"Swiftsync: process '{process_name}' stopped.")
             button.config(text="Stopped")
         else:
+            self.queue.put({
+                'name': process_name,
+                'timeout': self.report_back_after_process_start
+            })
             process_module = import_module(f"processes.{process_name}.{process_name}")
             process_func = getattr(process_module, 'main')
             self.processes[process_name] = Process(target=process_func, args=(self.queue,))
@@ -143,14 +208,14 @@ class Parent:
     def stopServices(self):
         """
         Terminate all running processes and close the application window.
-
         """
-        for process in self.processes.values():
+        for key, process in self.processes.items():
             if process.is_alive():
                 process.terminate()
                 process.join()
-                logging.info(f"Swiftsync: Terminated process {process}")
+                logging.info(f"Swiftsync: Terminated process {key}")
         self.root.destroy()
+
 
 
 
@@ -167,7 +232,6 @@ class Parent:
 
         Returns:
             None
-            
         """
         self.stopServices()
 
@@ -183,18 +247,53 @@ class Parent:
         according to the message's content.
 
         """
+        current_time = time.time()
+
         while not self.queue.empty():
+
             message = self.queue.get()
-            self.labels[message['name']].config(text=f"[{message['name']}] - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {message['message']} ")
-            if message['status'] == 'OK':
-                self.status_dot[message['name']].itemconfig(1, fill='green')
-                logging.info(f"{message['name']}: {message['message']}")
-            elif message['status'] == 'NOK':
-                self.status_dot[message['name']].itemconfig(1, fill='red')
-                logging.error(f"{message['name']}: {message['message']}")
-            elif message['status'] == 'COK':
-                self.status_dot[message['name']].itemconfig(1, fill='yellow')
-                logging.warn(f"{message['name']}: {message['message']}")
+
+            if 'status' in message:
+                self.labels[message['name']].config(text=f"[{message['name']}] - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {message['message']} ")
+                if message['status'] == 'OK':
+                    self.status_dot[message['name']].itemconfig(1, fill='green')
+                    logging.info(f"{message['name']}: {message['message']}")
+                elif message['status'] == 'NOK':
+                    self.status_dot[message['name']].itemconfig(1, fill='red')
+                    logging.error(f"{message['name']}: {message['message']}")
+                elif message['status'] == 'COK':
+                    self.status_dot[message['name']].itemconfig(1, fill='yellow')
+                    logging.warning(f"{message['name']}: {message['message']}")
+
+            elif 'timeout' in message:
+                if message['name'] in self.response:
+                    del self.response[message['name']]
+
+                self.response[message['name']] = time.time() + message['timeout'] * 60
+
+        for process, timeout in self.response.items():
+
+            if current_time > timeout:
+
+                self.queue.put({
+                    'name': process,
+                    'status': 'NOK',
+                    'message': f"Process has become unresponsive, attempting restart."
+                })
+
+                self.queue.put({
+                    'name': process,
+                    'timeout': self.report_back_after_process_start
+                })
+
+                self.processes[process].terminate()
+                self.processes[process].join()
+                del self.processes[process]
+                process_module = import_module(f"processes.{process}.{process}")
+                process_func = getattr(process_module, 'main')
+                self.processes[process] = Process(target=process_func, args=(self.queue,))
+                self.processes[process].start()
+
         self.root.after(1000, self.update_labels)
 
 

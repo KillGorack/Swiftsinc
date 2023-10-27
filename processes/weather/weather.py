@@ -49,6 +49,10 @@ def main(queue):
 
     while True:
         schedule.run_pending()
+        queue.put({
+            'name': 'music',
+            'timeout': 1
+        })
         time.sleep(1)
 
 

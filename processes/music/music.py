@@ -287,6 +287,10 @@ def main(queue):
             # Delete files from source
             delete_from_source(
                 inventory[0] + inventory[1] + inventory[2], queue)
+        queue.put({
+            'name': 'music',
+            'timeout': 1
+        })
         time.sleep(10)
 
 
