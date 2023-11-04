@@ -7,13 +7,26 @@ from PIL import Image
 from PIL.ExifTags import TAGS
 from multiprocessing import Queue
 
-# Your paths
+
+
+
+
 fromdir = "D://Pictures//_drop"
 destdir = "D://Pictures//_organized"
 errodir = "D://Pictures//_err"
 
 
+
+
+
 def main(queue):
+    """
+    Main function to start the service and call the movinator function.
+    
+    Args:
+        queue (multiprocessing.Queue): A queue to store status messages.
+
+    """
 
     queue.put({
         'name': 'photos',
@@ -21,14 +34,39 @@ def main(queue):
         'message': "Service started."
     })
 
-    # Definitions
+
+
+
+
     def month_converter(month):
+        """
+        Converts a month name to a month number.
+        
+        Args:
+            month (str): The name of the month.
+            
+        Returns:
+            int: The number of the month.
+
+        """
+
         months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         return months.index(month) + 1
 
-    # Main function that does the work
+
+
+
+
     def movinator(queue):
+        """
+        Moves files from one directory to another based on their creation date.
+        
+        Args:
+            queue (multiprocessing.Queue): A queue to store status messages.
+
+        """
+
         for subdir, dirs, files in os.walk(fromdir):
             for file in files:
                 filepath = subdir + os.sep + file

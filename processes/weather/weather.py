@@ -5,12 +5,32 @@ from datetime import datetime
 from multiprocessing import Queue
 
 
+
+
+
 class DataPost:
+    """
+    A class used to post data to the KillGorack API.
+    """
+
+
+
+
 
     def __init__(self):
+        """
+        Initializes the DataPost object.
+        """
         super(DataPost, self).__init__()
 
+
+
+
+
     def PostToKillGorack(self):
+        """
+        Posts weather data to the KillGorack API.
+        """
         with open('key.txt') as f:
             key_from_file = f.readline().strip()
 
@@ -27,7 +47,16 @@ class DataPost:
             f'https://www.killgorack.com/PX4/api.php?ap=weather&apikeyid=3&vc={key_from_file}&api=json', data=encoded_data, headers=headers, verify=True)
 
 
+
+
+
 def main(queue):
+    """
+    Main function to start the service and schedule the job.
+
+    Args:
+        queue (multiprocessing.Queue): A queue to store status messages.
+    """
 
     queue.put({
         'name': 'weather',
@@ -36,6 +65,12 @@ def main(queue):
     })
 
     def job(queue):
+        """
+        Job function to post weather data and update the queue.
+
+        Args:
+            queue (multiprocessing.Queue): A queue to store status messages.
+        """
 
         d = DataPost()
         d.PostToKillGorack()
@@ -54,6 +89,9 @@ def main(queue):
             'timeout': 1
         })
         time.sleep(1)
+
+
+
 
 
 if __name__ == "__main__":

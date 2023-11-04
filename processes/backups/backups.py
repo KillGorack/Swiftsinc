@@ -6,7 +6,23 @@ import schedule
 from datetime import datetime
 from multiprocessing import Queue
 
+
+
+
+
 def backup_directory(sourcepath, archivepath, name, narchives, queue):
+    """
+    Backs up a directory and updates a SQLite database.
+
+    Args:
+        sourcepath (str): The path of the directory to back up.
+        archivepath (str): The path where the backup will be stored.
+        name (str): The name of the backup.
+        narchives (int): The number of archives to keep.
+        queue (multiprocessing.Queue): A queue to store status messages.
+
+    """
+
     if os.path.isdir(sourcepath):
         queue.put({
             'name': 'backups',
@@ -34,7 +50,18 @@ def backup_directory(sourcepath, archivepath, name, narchives, queue):
             'message': f"Backup of {name} completed."
         })
 
+
+
+
+
 def main(queue):
+    """
+    Main function to start the service and schedule the daily check.
+
+    Args:
+        queue (multiprocessing.Queue): A queue to store status messages.
+
+    """
 
     queue.put({
         'name': 'backups',
@@ -42,7 +69,13 @@ def main(queue):
         'message': f"Service started."
     })
 
+
     def daily_check():
+        """
+        Checks if a backup is needed and performs it if necessary.
+
+        """
+
         conn = sqlite3.connect('settings.db')
         c = conn.cursor()
         c.execute('SELECT * FROM backups')
@@ -76,6 +109,10 @@ def main(queue):
     while True:
         schedule.run_pending()
         time.sleep(1)
+
+
+
+
 
 if __name__ == "__main__":
     queue = Queue()

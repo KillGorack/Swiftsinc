@@ -8,12 +8,32 @@ from multiprocessing import Queue
 
 
 class SpeedTest:
+    """
+    A class to test the speed of your internet connection.
     
+    """
+
     def __init__(self):
+        """
+        Initialize the SpeedTest class.
+
+        """
+        
         super(SpeedTest, self).__init__()
 
+
+
+
+
     def test(self):
+        """
+        Test the download and upload speed of the current internet connection.
         
+        Returns:
+            dict: A dictionary containing various speed test results.
+
+        """
+
         servers = []
         threads = None
 
@@ -68,10 +88,28 @@ class SpeedTest:
         return res
 
 
+
+
+
 class DataPost:
+    """
+    A class to post data to the killgorack.com website.
+
+    """
 
     def post_to_kill_gorack(self, results, queue):
-        
+        """
+        Post the speed test results to killgorack.com.
+
+        Args:
+            results (dict): The speed test results.
+            queue (Queue): A queue to store the status of the post request.
+
+        Raises:
+            requests.RequestException: If the post request fails.
+
+        """
+
         with open('key.txt') as f:
             key_from_file = f.readline().strip()
 
@@ -95,7 +133,17 @@ class DataPost:
             })
 
 
+
+
+
 def main(queue):
+    """
+    Main function to start the speed test service and schedule it to run every hour.
+
+    Args:
+        queue (Queue): A queue to store the status of the speed test.
+
+    """
 
     queue.put({
         'name': 'speed',
@@ -103,8 +151,19 @@ def main(queue):
         'message': "Service started."
     })
 
-    def job(queue):
 
+
+
+
+    def job(queue):
+        """
+        Job function to perform the speed test and post the results to killgorack.com.
+
+        Args:
+            queue (Queue): A queue to store the status of the speed test.
+
+        """
+        
         retry = True
 
         while retry:
