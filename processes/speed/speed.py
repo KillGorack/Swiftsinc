@@ -200,7 +200,7 @@ def main(queue):
 
                 queue.put({
                     'name': 'speed',
-                    'status': 'NOK',
+                    'status': 'OK',
                     'message': f"{str(e)}"
                 })
                 

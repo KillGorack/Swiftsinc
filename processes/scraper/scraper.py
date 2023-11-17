@@ -8,6 +8,9 @@ from PIL import Image
 from multiprocessing import Queue
 import io
 import time
+import hashlib
+from urllib.parse import urlparse
+import configparser
 
 
 class imageReaper:
@@ -16,8 +19,20 @@ class imageReaper:
         self.conn = sqlite3.connect('web_crawl.db')
         self.c = self.conn.cursor()
         self.c.execute('''CREATE TABLE IF NOT EXISTS webpages (url text UNIQUE)''')
+        self.c.execute('''CREATE TABLE IF NOT EXISTS images (hash text UNIQUE)''')
         self.conn.commit()
         self.counter = 1
+
+    def get_file_extension(self, url):
+        parsed = urlparse(url)
+        path = parsed.path
+        path = path.split('?')[0]
+        file_extension = os.path.splitext(path)[1]
+        if len(file_extension) not in [4, 5]:
+            return ".jpg"
+        else:
+            return os.path.splitext(path)[1]
+
 
     def crawl(self, start_url, max_depth, queue):
         urlqueue = deque([(start_url, 0)])
@@ -30,11 +45,11 @@ class imageReaper:
                 r = requests.get(url)
                 soup = BeautifulSoup(r.text, 'html.parser')
             except Exception as e:
-                #queue.put({
-                    #'name': 'scraper',
-                    #'status': 'NOK',
-                    #'message': f"Error while accessing {url}: {e}"
-                #})
+                queue.put({
+                    'name': 'scraper',
+                    'status': 'OK',
+                    'message': f"Error while accessing {url}: {e}"
+                })
                 continue
 
             for link in soup.find_all('a'):
@@ -46,11 +61,11 @@ class imageReaper:
                         self.process_url(new_url, queue)
                     except Exception as e:
                         pass
-                        #queue.put({
-                            #'name': 'scraper',
-                            #'status': 'NOK',
-                            #'message': f"Error while processing {new_url}: {e}"
-                        #})
+                        queue.put({
+                            'name': 'scraper',
+                            'status': 'OK',
+                            'message': f"Error while processing {new_url}: {e}"
+                        })
 
             for element in soup.select('[data-href]'):
                 s = element.get('data-href')
@@ -61,24 +76,12 @@ class imageReaper:
                         self.process_url(new_url, queue)
                     except Exception as e:
                         pass
-                        #queue.put({
-                            #'name': 'scraper',
-                            #'status': 'NOK',
-                            #'message': f"Error while processing {new_url}: {e}"
-                        #})
+                        queue.put({
+                            'name': 'scraper',
+                            'status': 'OK',
+                            'message': f"Error while processing {new_url}: {e}"
+                        })
 
-    """
-        def process_url(self, url, queue):
-            self.c.execute("SELECT url FROM webpages WHERE url=?", (url,))
-            result = self.c.fetchone()
-            if result is None:
-                self.c.execute("INSERT INTO webpages VALUES (?)", (url,))
-                self.conn.commit()
-                if url.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
-                    self.download_image(url, queue)
-                else:
-                    self.download_images(url, queue)
-    """
 
     def process_url(self, url, queue):
         self.c.execute("SELECT url FROM webpages WHERE url=?", (url,))
@@ -86,17 +89,35 @@ class imageReaper:
         if result is None:
             self.c.execute("INSERT INTO webpages VALUES (?)", (url,))
             self.conn.commit()
-            if url.lower().endswith('.pdf'):
-                self.download_pdf(url, queue)
+            if url.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                self.download_image(url, queue)
+            else:
+                self.download_images(url, queue)
 
 
     def download_image(self, img_url, queue):
         try:
             response = requests.get(img_url, stream=True)
-            img = Image.open(io.BytesIO(response.content))
-            filename = 'image' + str(self.counter)
-            with open('images/' + filename + '.jpg', 'wb') as out_file:
-                out_file.write(response.content)
+            img_data = response.content
+            img_hash = hashlib.sha256(img_data).hexdigest()
+
+            self.c.execute("SELECT hash FROM images WHERE hash=?", (img_hash,))
+            result = self.c.fetchone()
+            if result is not None:
+                queue.put({
+                    'name': 'scraper',
+                    'status': 'OK',
+                    'message': "Image already downloaded"
+                })
+                return
+
+            img = Image.open(io.BytesIO(img_data))
+            filename = 'imagea' + str(self.counter)
+            file_extension = self.get_file_extension(img_url)
+            with open('images/' + filename + file_extension, 'wb') as out_file:
+                out_file.write(img_data)
+            self.c.execute("INSERT INTO images VALUES (?)", (img_hash,))
+            self.conn.commit()
             queue.put({
                 'name': 'scraper',
                 'status': 'OK',
@@ -106,20 +127,7 @@ class imageReaper:
         except Exception as e:
             pass
 
-    def download_pdf(self, pdf_url, queue):
-        try:
-            response = requests.get(pdf_url, stream=True)
-            filename = 'pdf' + str(self.counter)
-            with open('pdfs/' + filename + '.pdf', 'wb') as out_file:
-                out_file.write(response.content)
-            queue.put({
-                'name': 'scraper',
-                'status': 'OK',
-                'message': "PDF downloaded {}".format(self.counter)
-            })
-            self.counter += 1
-        except Exception as e:
-            pass
+
 
     def download_images(self, url, queue):
         response = requests.get(url)
@@ -130,32 +138,65 @@ class imageReaper:
             os.makedirs('images')
 
         for img in img_tags:
+
             img_url = img.get('src')
             if 'http' not in img_url:
                 img_url = urljoin(url, img_url)
             try:
                 response = requests.get(img_url, stream=True)
+                img_data = response.content
+                img_hash = hashlib.sha256(img_data).hexdigest()
+                self.c.execute("SELECT hash FROM images WHERE hash=?", (img_hash,))
+                result = self.c.fetchone()
+                if result is not None:
+                    queue.put({
+                        'name': 'scraper',
+                        'status': 'OK',
+                        'message': "Image already downloaded"
+                    })
+                    continue
                 try:
+
                     img = Image.open(io.BytesIO(response.content))
-                    if img.size[0] > 200 and img.size[1] > 200:
+                    
+                    #if ((img.size[0] >= 1920 and img.size[1] >= 1080) or (img.size[0] >= 1080 and img.size[1] >= 2340)):
+                    if img.size[0] >= 800 and img.size[1] >= 800:
+                        
                         filename = 'image' + str(self.counter)
-                        with open('images/' + filename + '.jpg', 'wb') as out_file:
+                        file_extension = self.get_file_extension(img_url)
+                        with open('images/' + filename + file_extension, 'wb') as out_file:
                             out_file.write(response.content)
+                        self.c.execute("INSERT INTO images (hash) VALUES (?)", (img_hash,))
+                        self.conn.commit()
+
+                        queue.put({
+                            'name': 'scraper',
+                            'status': 'OK',
+                            'message': "Image downloaded! (#{})".format(self.counter)
+                        })
+
                         self.counter += 1
+                    else:
+
+                        queue.put({
+                            'name': 'scraper',
+                            'status': 'COK',
+                            'message': "Wrong dimensions. ({}X{})".format(img.size[0], img.size[1])
+                        })
+
                 except IOError:
+
                     pass
-                    #queue.put({
-                        #'name': 'scraper',
-                        #'status': 'NOK',
-                        #'message': f"Error: Cannot identify image file {img_url}"
-                    #})
+
+
             except Exception as e:
-                #queue.put({
-                    #'name': 'scraper',
-                    #'status': 'NOK',
-                    #'message': f"Error downloading {img_url}: {e}"
-                #})
+                queue.put({
+                    'name': 'scraper',
+                    'status': 'OK',
+                    'message': f"Error downloading {img_url}: {e}"
+                })
                 pass
+
 
 def main(queue):
 
@@ -165,8 +206,12 @@ def main(queue):
         'message': "Service running."
     })
 
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    base_url = config.get('scraper', 'base_url')
+    
     gi = imageReaper(queue)
-    gi.crawl("https://www.google.com/search?q=ISO+22093&sca_esv=575449117&sxsrf=AM9HkKlK8WcOu381sgEe9F4Q-vMYGXCdcA%3A1697896662711&ei=1tgzZYf_KrWmqtsPvuKyoAo&ved=0ahUKEwiHwsj7pYeCAxU1k2oFHT6xDKQQ4dUDCBA&uact=5&oq=ISO+22093&gs_lp=Egxnd3Mtd2l6LXNlcnAiCUlTTyAyMjA5MzIEECMYJzIGEAAYFhgeMgYQABgWGB5Ijw1QAFgAcAB4AZABAJgBbaABbaoBAzAuMbgBA8gBAPgBAvgBAeIDBBgAIEGIBgE&sclient=gws-wiz-serp", 100, queue)
+    gi.crawl(base_url, 100, queue)
 
     while True:
         time.sleep(1)

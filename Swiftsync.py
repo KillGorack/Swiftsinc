@@ -16,6 +16,10 @@ import os
 import subprocess
 import sqlite3
 
+
+
+
+
 class Parent:
 
 
@@ -30,7 +34,8 @@ class Parent:
         necessary data structures, configuring the GUI, and displaying the main window.
 
         """
-        logging.basicConfig(level=logging.INFO, filename='swiftsync.log', filemode='a', format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        logging.basicConfig(level=logging.ERROR, filename='swiftsync.log', filemode='a', format='[%(asctime)s][%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        
 
         self.queue = Queue()
         self.processes = {}
@@ -310,7 +315,7 @@ class Parent:
         """
         for process_name, process in self.processes.items():
             if not process.is_alive():
-                logging.error(f"Swiftsync: Process {process_name} has terminated unexpectedly")
+                logging.info(f"Swiftsync: Process {process_name} has terminated.")
         self.root.after(1000, self.checkProcesses)
 
 
