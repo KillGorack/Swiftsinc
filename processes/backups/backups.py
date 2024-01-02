@@ -1,93 +1,96 @@
 import sqlite3
 import shutil
 import os
-import time
 import schedule
-from datetime import datetime
 from multiprocessing import Queue
-
-
-
-
+import time
 
 def backup_directory(sourcepath, archivepath, name, narchives, queue):
 
-    if os.path.isdir(sourcepath):
+    try:
+        if os.path.isdir(sourcepath):
+
+            queue.put({
+                'name': 'Backups',
+                'status': 'OK',
+                'message': f"Backup of {name} started."
+            })
+
+            filename = "{} Backup {}".format(name, time.strftime("%Y%m%d-%H%M%S"))
+            archivefile = os.path.join(archivepath, filename)
+            if not os.path.exists(archivepath):
+                os.makedirs(archivepath)
+            shutil.make_archive(archivefile, 'zip', sourcepath)
+            archives = sorted(os.listdir(archivepath), reverse=True)
+            for archive in archives[narchives:]:
+                os.remove(os.path.join(archivepath, archive))
+
+            queue.put({
+                'name': 'Backups',
+                'status': 'OK',
+                'message': f"Backup of {name} completed."
+            })
+
+        else:
+
+            queue.put({
+                'name': 'Backups',
+                'status': 'NOK',
+                'message': f"Bad source directory defined."
+            })
+
+    except Exception as e:
+        
         queue.put({
-            'name': 'backups',
-            'status': 'OK',
-            'message': f"Backup of {name} started."
+            'name': 'Backups',
+            'status': 'Error',
+            'message': str(e)
         })
-        archivefile = os.path.join(
-            archivepath, time.strftime("%Y%m%d-%H%M%S") + '.zip')
-        if not os.path.exists(archivepath):
-            os.makedirs(archivepath)
-        shutil.make_archive(archivefile, 'zip', sourcepath)
-        archives = sorted(os.listdir(archivepath), reverse=True)
-        for archive in archives[narchives:]:
-            os.remove(os.path.join(archivepath, archive))
-
-        conn = sqlite3.connect('settings.db')
-        c = conn.cursor()
-        c.execute("UPDATE backups SET lastcomplete = ? WHERE name = ?",
-                  (datetime.now(), name))
-        conn.commit()
-        conn.close()
-        queue.put({
-            'name': 'backups',
-            'status': 'OK',
-            'message': f"Backup of {name} completed."
-        })
-
-
-
-
 
 def main(queue):
 
     queue.put({
-        'name': 'backups',
+        'name': 'Backups',
         'status': 'OK',
-        'message': f"Service started."
+        'message': f"Service running, waiting."
     })
 
-    def daily_check():
+    def scheduler():
 
-        conn = sqlite3.connect('settings.db')
-        c = conn.cursor()
-        c.execute('SELECT * FROM backups')
-        rows = c.fetchall()
+        with sqlite3.connect('settings.db') as conn:
+            c = conn.cursor()
+            c.execute('SELECT * FROM backups')
+            rows = c.fetchall()
 
-        for row in rows:
-            name = row[0]
-            sourcepath = row[1]
-            archivepath = row[2]
-            interval_days = row[3]
-            lastcomplete = row[4]
-            narchives = row[5]
+            counter = 0
 
-            if not lastcomplete:
-                backup_directory(sourcepath, archivepath, name, narchives, queue)
-            else:
-                days_since_last_backup = (
-                    datetime.now() - datetime.strptime(lastcomplete, "%Y-%m-%d %H:%M:%S.%f")).days
-                if days_since_last_backup >= interval_days:
-                    backup_directory(sourcepath, archivepath, name, narchives, queue)
+            for row in rows:
+                name = row[0]
+                sourcepath = row[1]
+                archivepath = row[2]
+                interval = row[3]
+                narchives = row[4]
 
-        conn.close()
+                if interval == 'day':
+                    schedule.every().day.at("08:39").do(backup_directory, sourcepath, archivepath, name, narchives, queue)
+                elif interval == 'week':
+                    schedule.every().monday.at("01:00").do(backup_directory, sourcepath, archivepath, name, narchives, queue)
+                elif interval == 'month':
+                    schedule.every(1).months.at("01:00").do(backup_directory, sourcepath, archivepath, name, narchives, queue)
+
+                counter = counter + 1
 
         queue.put({
-            'name': 'backups',
-            'timeout': 2880
+            'name': 'Backups',
+            'status': 'OK',
+            'message': "{} backup(s) scheduled.".format(counter)
         })
 
-    schedule.every().day.at("00:10").do(daily_check)
+    scheduler()
 
     while True:
         schedule.run_pending()
         time.sleep(1)
-
-
 
 
 if __name__ == "__main__":
