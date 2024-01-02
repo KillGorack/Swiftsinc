@@ -160,7 +160,7 @@ class imageReaper:
                     img = Image.open(io.BytesIO(response.content))
                     
                     #if ((img.size[0] >= 1920 and img.size[1] >= 1080) or (img.size[0] >= 1080 and img.size[1] >= 2340)):
-                    if img.size[0] >= 800 and img.size[1] >= 800:
+                    if img.size[0] >= 3 and img.size[1] >= 3:
                         
                         filename = 'image' + str(self.counter)
                         file_extension = self.get_file_extension(img_url)
